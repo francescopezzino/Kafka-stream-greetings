@@ -33,13 +33,14 @@ public class GreetingsStreamApp {
 
         var greetingsTopology = GreetingsTopology.builTopology();
 
-        var kafkaStreams = new KafkaStreams(greetingsTopology, properties);
+        try (var kafkaStreams = new KafkaStreams(greetingsTopology, properties)) {
 
-        Runtime.getRuntime().addShutdownHook((new Thread(kafkaStreams::close)));
-        try {
-            kafkaStreams.start();
-        } catch (Exception e) {
-            log.error("Exception in starting the stream: {}", e.getMessage());
+            Runtime.getRuntime().addShutdownHook((new Thread(kafkaStreams::close)));
+            try {
+                kafkaStreams.start();
+            } catch (Exception e) {
+                log.error("Exception in starting the stream: {}", e.getMessage());
+            }
         }
     }
 
