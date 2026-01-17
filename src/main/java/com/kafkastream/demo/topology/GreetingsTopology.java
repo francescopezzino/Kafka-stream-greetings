@@ -24,7 +24,7 @@ public class GreetingsTopology {
     public static Topology builTopology() {
         StreamsBuilder streamBuilder = new StreamsBuilder();
 
-        KStream<String, Greeting> mergedStream = getCustomStringGreetingKStream(streamBuilder);
+        KStream<String, Greeting> mergedStream = getCustomGreetingUsingGenericsKStream(streamBuilder);
         mergedStream.print(Printed.<String, Greeting>toSysOut().withLabel("GreetingsStream"));
 
         var modifiedStream = mergedStream
@@ -33,7 +33,7 @@ public class GreetingsTopology {
         modifiedStream.print(Printed.<String, Greeting>toSysOut().withLabel("modifiedStream"));
 
         // Producer now uses Custom Serdes Serializer/Deserializer
-        modifiedStream.to(GREETINGS_UPPERCASE, Produced.with(Serdes.String(), SerdesFactory.greetingSerdes()));
+        modifiedStream.to(GREETINGS_UPPERCASE, Produced.with(Serdes.String(), SerdesFactory.greetingSerdesUsingGenerics()));
 
         return streamBuilder.build();
     }
@@ -51,10 +51,10 @@ public class GreetingsTopology {
      * @param streamBuilder
      * @return
      */
-    private static KStream<String, Greeting> getCustomStringGreetingKStream (StreamsBuilder streamBuilder) {
+    private static KStream<String, Greeting> getCustomGreetingUsingGenericsKStream (StreamsBuilder streamBuilder) {
 
-        var greetingsStream = streamBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), SerdesFactory.greetingSerdes()));
-        var greetingsItalianStream = streamBuilder.stream(GREETINGS_ITALIAN, Consumed.with(Serdes.String(), SerdesFactory.greetingSerdes()));
+        var greetingsStream = streamBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), SerdesFactory.greetingSerdesUsingGenerics()));
+        var greetingsItalianStream = streamBuilder.stream(GREETINGS_ITALIAN, Consumed.with(Serdes.String(), SerdesFactory.greetingSerdesUsingGenerics()));
         var mergedStream = greetingsStream.merge(greetingsItalianStream);
 
         return mergedStream;
