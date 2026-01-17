@@ -1,10 +1,8 @@
 package com.kafkastream.demo.serdes;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafkastream.demo.domain.Greeting;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Serializer;
 
 @Slf4j
