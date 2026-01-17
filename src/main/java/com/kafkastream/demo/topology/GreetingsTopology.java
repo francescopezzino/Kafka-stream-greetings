@@ -7,6 +7,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.kstream.Produced;
 
@@ -21,13 +22,20 @@ public class GreetingsTopology {
 
     public static String GREETINGS_ITALIAN = "greetings_italian";
 
-    public static Topology builTopolog() {
+    public static Topology builTopology() {
         StreamsBuilder builder = new StreamsBuilder();
+
         // Reading from the Kafka Topic - Uses Consumer API
-        var greetingsStream = builder.stream(GREETINGS, Consumed.with(Serdes.String(), Serdes.String()));
+//        var greetingsStream = builder.stream(GREETINGS,
+//                Consumed.with(Serdes.String(), Serdes.String()));  // instructing the kafka stream to use a deSerializer
 
         // merge topics test
-        var greetingsItalianStream = builder.stream(GREETINGS_ITALIAN, Consumed.with(Serdes.String(), Serdes.String()));
+//        var greetingsItalianStream = builder.stream(GREETINGS_ITALIAN, Consumed.with(Serdes.String(), Serdes.String()));
+
+        // Providing Default Serializer/Deserializer using Application Configuration
+        KStream<String, String> greetingsStream = builder.stream(GREETINGS);
+        KStream<String, String> greetingsItalianStream = builder.stream(GREETINGS_ITALIAN);
+
         var mergedStream = greetingsStream.merge(greetingsItalianStream);
 
         greetingsStream.print(Printed.<String, String>toSysOut().withLabel("GreetingsStream"));
@@ -38,7 +46,7 @@ public class GreetingsTopology {
 */
 
         // Perform the enrichment (to uppercase)
-        var modifiedStream = greetingsStream
+        var modifiedStream = mergedStream
                 // .filterNot((key, value) -> value.length() > 5)
                 .filter((key, value) -> value.length() > 5) // any value with lenght > 5 will ignored and not sent to kafka topic GREETINGS_UPPERCASE
                 .peek((key, value) -> log.info("after filter : key  {}, value {}", key, value))
@@ -84,7 +92,12 @@ public class GreetingsTopology {
 */
 
         // Writing back to a Kafka Topic - Uses Producer API
-        modifiedStream.to(GREETINGS_UPPERCASE, Produced.with(Serdes.String(), Serdes.String()));
+//        modifiedStream.to(GREETINGS_UPPERCASE,
+//                Produced.with(Serdes.String(), Serdes.String()));  // instructing the kafka stream to use a serializer
+
+        // Providing Default Serializer/Deserializer using Application Configuration
+        modifiedStream.to(GREETINGS_UPPERCASE);
+
         return builder.build();
     }
 }

@@ -183,3 +183,15 @@ We want to channel this data from two different topics into a single topic
                 return newValue;
             });
 ```
+
+### Serdes - Factory for creating serializers / deserializers
+
+- Serdes is the factory class in Kafka Streams that takes care of handling serialization and deserialization of key and value
+
+```
+var greetingsStream = streamBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), Serdes.String()));
+
+Consumed.with()
+1 st param: Key DeSerializer, 
+2 nd param: Value DeSerializer
+```
