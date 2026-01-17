@@ -1,0 +1,27 @@
+package com.kafkastream.demo.serdes;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kafkastream.demo.domain.Greeting;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.serialization.Serializer;
+
+@Slf4j
+public class GreetingSerializer implements Serializer<Greeting> {
+
+    private ObjectMapper objectMapper;
+
+    public GreetingSerializer(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public byte[] serialize(String topic, Greeting data) {
+        try {
+            return objectMapper.writeValueAsBytes(data);
+        } catch (Exception e) {
+            log.error("Exception : {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+}
