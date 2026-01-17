@@ -1,17 +1,17 @@
 package com.kafkastream.demo.topology;
 
-import ch.qos.logback.core.boolex.EvaluationException;
+import com.kafkastream.demo.domain.Greeting;
+import com.kafkastream.demo.serdes.SerdesFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
+
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.kstream.Produced;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
 @Slf4j
 public class GreetingsTopology {
 
@@ -21,70 +21,43 @@ public class GreetingsTopology {
 
     public static String GREETINGS_ITALIAN = "greetings_italian";
 
-    public static Topology builTopolog() {
-        StreamsBuilder builder = new StreamsBuilder();
-        // Reading from the Kafka Topic - Uses Consumer API
-        var greetingsStream = builder.stream(GREETINGS, Consumed.with(Serdes.String(), Serdes.String()));
+    public static Topology builTopology() {
+        StreamsBuilder streamBuilder = new StreamsBuilder();
 
-        // merge topics test
-        var greetingsItalianStream = builder.stream(GREETINGS_ITALIAN, Consumed.with(Serdes.String(), Serdes.String()));
+        KStream<String, Greeting> mergedStream = getCustomStringGreetingKStream(streamBuilder);
+        mergedStream.print(Printed.<String, Greeting>toSysOut().withLabel("GreetingsStream"));
+
+        var modifiedStream = mergedStream
+                .mapValues((readOnlyKey, value) -> new Greeting(value.message().toUpperCase(), value.timestamp()));
+
+        modifiedStream.print(Printed.<String, Greeting>toSysOut().withLabel("modifiedStream"));
+
+        // Producer now uses Custom Serdes Serializer/Deserializer
+        modifiedStream.to(GREETINGS_UPPERCASE, Produced.with(Serdes.String(), SerdesFactory.greetingSerdes()));
+
+        return streamBuilder.build();
+    }
+
+    private static KStream<String, String> getStringGreetingKStream (StreamsBuilder builder) {
+
+        KStream<String, String> greetingsStream = builder.stream(GREETINGS);
+        KStream<String, String> greetingsItalianStream = builder.stream(GREETINGS_ITALIAN);
+        var mergedStream = greetingsStream.merge(greetingsItalianStream);
+        return mergedStream;
+    }
+
+    /**
+     * Custom Greeting stream, reads the value as JSON, and the JSON will be of type Greeting
+     * @param streamBuilder
+     * @return
+     */
+    private static KStream<String, Greeting> getCustomStringGreetingKStream (StreamsBuilder streamBuilder) {
+
+        var greetingsStream = streamBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), SerdesFactory.greetingSerdes()));
+        var greetingsItalianStream = streamBuilder.stream(GREETINGS_ITALIAN, Consumed.with(Serdes.String(), SerdesFactory.greetingSerdes()));
         var mergedStream = greetingsStream.merge(greetingsItalianStream);
 
-        greetingsStream.print(Printed.<String, String>toSysOut().withLabel("GreetingsStream"));
-
-/*      // merge topics test
-        var modifiedStream = mergedStream.mapValues((readOnlyKey, value) -> value.toUpperCase());
-        modifiedStream.print(Printed.<String, String>toSysOut().withLabel("modifiedStream"));
-*/
-
-        // Perform the enrichment (to uppercase)
-        var modifiedStream = greetingsStream
-                // .filterNot((key, value) -> value.length() > 5)
-                .filter((key, value) -> value.length() > 5) // any value with lenght > 5 will ignored and not sent to kafka topic GREETINGS_UPPERCASE
-                .peek((key, value) -> log.info("after filter : key  {}, value {}", key, value))
-                .mapValues((readOnlyKey, value) -> value.toUpperCase())
-                .peek((key, value) -> log.info("after filter : key  {}, value {}", key, value))    //.mapValues((readOnlyKey, value) -> value.toUpperCase())
-
-                // using map
-//                .map((key, value) -> KeyValue.pair(key.toUpperCase(), value.toUpperCase()));
-
-                // using flatMap
-                    .flatMap((key, value) -> {
-                       var newValues = Arrays.asList(value.split(""));  // note we split on each character now
-                       return newValues
-                               .stream()
-                               .map(val -> KeyValue.pair(key, val.toUpperCase()))
-                               .toList();   // same as: .collect(Collectors.toList());
-                    });
-
-                // using flatMapValues
-//                .flatMapValues((key, value) -> {
-//                    var newValues = Arrays.asList(value.split(""));  // note we split on each character now
-//                    return newValues
-//                            .stream()
-//                            .map(String::toUpperCase)
-//                            .toList();   // same as: .collect(Collectors.toList());
-//                });
-
-        modifiedStream.print(Printed.<String, String>toSysOut().withLabel("modifiedStream"));
-
-/*        var uppercaseStream = greetingsStream.filter((key, value) -> value.length() > 5)
-                .flatMap((key, value) -> {
-                    var newValue = Arrays.asList(value.split(" "));
-                    var keyValueList = newValue.stream()
-                            .map(t -> KeyValue.pair(key.toUpperCase(), t)).collect(Collectors.toList());
-                    return keyValueList;
-                });
-
-        var uppercaseStream = greetingsStream.filter((key, value) -> value.length() > 5)
-                .flatMapValues((keyOnlyKey, value) -> {
-                    var newValue = Arrays.asList(value.split(" "));  // holds the list of individual characters (e.g. for a String)
-                    return newValue;
-                });
-*/
-
-        // Writing back to a Kafka Topic - Uses Producer API
-        modifiedStream.to(GREETINGS_UPPERCASE, Produced.with(Serdes.String(), Serdes.String()));
-        return builder.build();
+        return mergedStream;
     }
+
 }

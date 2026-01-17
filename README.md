@@ -183,3 +183,27 @@ We want to channel this data from two different topics into a single topic
                 return newValue;
             });
 ```
+
+### Serdes - Factory for creating serializers / deserializers
+
+- Serdes is the factory class in Kafka Streams that takes care of handling serialization and deserialization of key and value
+
+```
+var greetingsStream = streamBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), Serdes.String()));
+
+Consumed.with()
+1 st param: Key DeSerializer, 
+2 nd param: Value DeSerializer
+```
+#### Build a Custom Serde
+we need a 
+- *Serializer*
+- *Deserializer*
+- **Serde** that holds the Serializer and Deserializer
+
+
+#### Custom Serializer and Deserializer in Kafka Stream
+
+Build a custom Serdes which is able to read JSON, and apply some operation on top of it, and then write the data as JSON into the Kafka Topic.
+Achieved by creating a Serializer (GreetingSerializer) and a Serdes class (GreetingSerdes), that holds the serializer and deserializer, and then creating a Serdes factory class (SerdesFactory), which returns a GreetingSerdes instance.
+All all that above been plugged via the Produced.with() and Consumed.with() factory methods
