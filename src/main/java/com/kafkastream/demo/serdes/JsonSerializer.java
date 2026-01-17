@@ -12,7 +12,7 @@ import org.apache.kafka.common.serialization.Serializer;
 @Slf4j
 public class JsonSerializer<T> implements Serializer<T> {
 
-    private ObjectMapper objectMapper = new ObjectMapper()
+    private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
