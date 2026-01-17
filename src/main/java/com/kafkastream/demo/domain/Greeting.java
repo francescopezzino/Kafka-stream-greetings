@@ -7,11 +7,4 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Builder
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class Greeting {
-    private String message;
-    private LocalDateTime timeStamp;
-}
+record Greetings(String message, LocalDateTime timestamp) {}
